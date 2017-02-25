@@ -11,8 +11,8 @@ var g = {
 	width: 64,
 	height: 64,
 
-	player_x: 352,
-	player_y: 352,
+	player_x: 0,
+	player_y: 0,
 
 	dx: 0,
 	dy: 0,
@@ -21,7 +21,7 @@ var g = {
 	title: null,
 
 	// Current game state: title, play, gameover_win, gameover_lose
-	state: 'title',
+	state: '',
 
 	player_val: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5],
 	player_anim_time: 0,
@@ -36,7 +36,8 @@ var g = {
 	map_canvas: null,
 	map_data: null,
 
-	health: 16,
+	MAX_HEALTH: 16,
+	health: 0,
 	// Amount that health decays each time the countdown timer triggers.
 	health_decay: 0.25,
 	health_timer: 0,
@@ -70,6 +71,7 @@ var g = {
 	valid_keys: {
 		'ArrowUp':1, 'ArrowDown':1, 'ArrowLeft':1, 'ArrowRight':1,
 		'KeyW':1, 'KeyA':1, 'KeyS':1, 'KeyD':1,
+		'Space':1, 'Enter':1,
 	},
 
 	objects: [
@@ -119,6 +121,22 @@ var init = function() {
 	load_images();
 
 	precalc_shadow_tables();
+
+	reset();
+}
+
+var reset = function() {
+	g.player_x = 352;
+	g.player_y = 352;
+	g.dx = 0;
+	g.dy = 0;
+	g.health = g.MAX_HEALTH;
+
+	g.state = 'title';
+
+	g.blobs = [];
+	g.blob_mode = 'attack';
+	g.crystals = [];
 
 	init_blobs();
 	init_crystals();
@@ -353,14 +371,19 @@ var gameloop = function(time) {
 	if (g.state == 'gameover_win') {
 		ctx.drawImage(g.win, 0, 0);
 	}
+	if (g.state.lastIndexOf('gameover', 0) === 0) {
+		if (g.keymap['Space'] || g.keymap['Enter']) {
+			reset();
+		}
+	}
 }
 
 var update_health = function(d) {
 	g.health += d;
 	if (g.health < 0)
 		g.health = 0;
-	if (g.health > 16)
-		g.health = 16;
+	if (g.health > g.MAX_HEALTH)
+		g.health = g.MAX_HEALTH;
 }
 
 var update_player_location = function(dx, dy) {
@@ -415,7 +438,7 @@ var update_player_location = function(dx, dy) {
 				var pos = info[0];
 				if (is_near_player_square(pos[0], pos[1], 2)) {
 					info[1] = false;
-					update_health(16);
+					update_health(g.MAX_HEALTH);
 					g.blob_mode = 'flee';
 					g.blob_timer = 500;
 				}
